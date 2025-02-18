@@ -1,0 +1,6 @@
+# VS Code stuff
+.vscode
+*.code-workspace
+
+# BUILD
+build/
