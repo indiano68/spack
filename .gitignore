@@ -4,3 +4,6 @@
 
 # BUILD
 build/
+
+#Validate, has tro be ingored for now because not "ready"
+validate/

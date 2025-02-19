@@ -16,15 +16,15 @@ static void warn_handler(std::string warning_message)
 
 /******************** Implement Matrix ********************/
 
-size_t matrix_interface::size()
+size_t matrix_interface::size() const
 {
     return __ncols * __nrows;
 }
-size_t matrix_interface::nrows()
+size_t matrix_interface::nrows() const
 {
     return __nrows;
 }
-size_t matrix_interface::ncols()
+size_t matrix_interface::ncols() const
 {
     return __ncols;
 }
@@ -110,7 +110,6 @@ coo_matrix::coo_matrix(size_t n_rows, size_t n_cols,
         error_handler(
             "Incorrectly sized objects passed to crf_matrix_constructor");
 }
-
 static bool __check_order(const std::vector<size_t> &row_idx,
                           const std::vector<size_t> &col_idx)
 {
@@ -127,7 +126,6 @@ static bool __check_order(const std::vector<size_t> &row_idx,
     }
     return result;
 }
-
 void coo_matrix::set_indexes(const std::vector<size_t> &row_indexes,
                              const std::vector<size_t> &col_indexes)
 {
@@ -176,7 +174,6 @@ bool coo_matrix::is_populated() const
 {
     return __populated[3];
 }
-
 const double &coo_matrix::operator()(size_t row_idx, size_t col_idx) const
 {
     static const double zero_dummy = 0;
@@ -195,7 +192,6 @@ const double &coo_matrix::operator()(size_t row_idx, size_t col_idx) const
             }
     return *data_ptr;
 }
-
 const double &coo_matrix::operator[](size_t idx) const
 {
 
@@ -216,7 +212,6 @@ csr_matrix::csr_matrix(std::size_t n_rows, std::size_t n_cols,
 {
     __row_pointers[n_rows] = n_non_zero;
 }
-
 csr_matrix::csr_matrix(size_t n_rows, size_t n_cols,
                        std::vector<size_t> r_pointers,
                        std::vector<size_t> c_indexes,
@@ -224,7 +219,7 @@ csr_matrix::csr_matrix(size_t n_rows, size_t n_cols,
     : sparse_matrix_interface(n_rows, n_cols, data.size())
 {
     if (r_pointers.size() == n_rows && c_indexes.size() == data.size()) {
-        __row_pointers = std::make_unique<size_t[]>(n_rows);
+        __row_pointers = std::make_unique<size_t[]>(n_rows+1);
         __col_indexes = std::make_unique<size_t[]>(c_indexes.size());
         __row_pointers[n_rows] = data.size();
         set_row_pointers(r_pointers);
@@ -234,7 +229,6 @@ csr_matrix::csr_matrix(size_t n_rows, size_t n_cols,
         error_handler(
             "Incorrectly sized objects passed to csr_matrix_constructor");
 }
-
 void csr_matrix::set_column_indexes(const std::vector<size_t> &col_indexes)
 {
     if (col_indexes.size() != __n_non_zero)
@@ -262,27 +256,34 @@ void csr_matrix::set_data(const std::vector<double> &data)
 
     std::memcpy(__data.get(), data.data(), sizeof(double) * data.size());
 }
-
 size_t *csr_matrix::get_column_indexes()
 {
     return __col_indexes.get();
 }
-
+const size_t *csr_matrix::get_column_indexes() const
+{
+    return __col_indexes.get();
+}
 size_t *csr_matrix::get_row_pointers()
 {
     return __row_pointers.get();
 }
-
+const size_t *csr_matrix::get_row_pointers() const 
+{
+    return __row_pointers.get();
+}
 double *csr_matrix::get_data()
 {
     return __data.get();
 }
-
+const double *csr_matrix::get_data() const
+{
+    return __data.get();
+}
 bool csr_matrix::is_populated() const
 {
     return __populated[3];
 }
-
 const double &csr_matrix::operator()(size_t row_idx, size_t col_idx) const
 {
     static const double zero_dummy = 0;
@@ -301,7 +302,6 @@ const double &csr_matrix::operator()(size_t row_idx, size_t col_idx) const
         }
     return *data_ptr;
 }
-
 const double &csr_matrix::operator[](size_t idx) const
 {
     if (idx >= __n_non_zero)

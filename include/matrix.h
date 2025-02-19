@@ -14,9 +14,10 @@ class matrix_interface
     virtual const double &operator[](size_t idx) const = 0;
     virtual void set_data(const std::vector<double> &data) = 0;
     virtual double *get_data() = 0;
-    size_t size();
-    size_t nrows();
-    size_t ncols();
+    virtual const double *get_data() const = 0;
+    size_t size() const;
+    size_t nrows() const;
+    size_t ncols() const;
 
   protected:
     std::size_t __nrows;
@@ -107,11 +108,14 @@ class csr_matrix : public sparse_matrix_interface
 
     void set_column_indexes(const std::vector<size_t> &col_indexes);
     size_t *get_column_indexes();
+    const size_t *get_column_indexes() const;
     void set_row_pointers(const std::vector<size_t> &row_pointers);
     size_t *get_row_pointers();
+    const size_t *get_row_pointers() const;
 
     void set_data(const std::vector<double> &data) override;
     double *get_data() override;
+    const double *get_data() const override;
 
     const double &operator()(size_t row_idx, size_t col_idx) const override;
     const double &operator[](size_t idx) const override;

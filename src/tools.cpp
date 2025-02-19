@@ -6,7 +6,6 @@
 extern void error_handler(std::string error_message);
 csr_matrix build_upper_triangular_sparsity(size_t n)
 {
-    csr_matrix csr = csr_matrix(n, n, (size_t)((n * (n + 1)) / 2));
     std::vector<size_t> row_pointers(n);
     std::vector<size_t> col_indexes((size_t)((n * (n + 1)) / 2));
     std::vector<double> data((size_t)((n * (n + 1)) / 2), 1.0);
@@ -17,18 +16,14 @@ csr_matrix build_upper_triangular_sparsity(size_t n)
     }
 
     for (size_t i = 0; i < n; i++) {
-        for (size_t j = i; j < csr.ncols(); j++) {
+        for (size_t j = i; j < n; j++) {
             col_indexes[row_pointers[i] + (j - i)] = j;
         }
     }
-    csr.set_row_pointers(row_pointers);
-    csr.set_column_indexes(col_indexes);
-    csr.set_data(data);
-    return csr;
+    return csr_matrix(n, n, row_pointers, col_indexes, data);
 }
 csr_matrix build_lower_triangular_sparsity(size_t n)
 {
-    csr_matrix csr = csr_matrix(n, n, (size_t)((n * (n + 1)) / 2));
     std::vector<size_t> row_pointers(n);
     std::vector<size_t> col_indexes((size_t)((n * (n + 1)) / 2));
     std::vector<double> data((size_t)((n * (n + 1)) / 2), 1.0);
@@ -42,13 +37,8 @@ csr_matrix build_lower_triangular_sparsity(size_t n)
             col_indexes[row_pointers[i] + j] = j;
         }
     }
-
-    csr.set_row_pointers(row_pointers);
-    csr.set_column_indexes(col_indexes);
-    csr.set_data(data);
-    return csr;
+    return csr_matrix(n, n, row_pointers, col_indexes, data);
 }
-
 csr_matrix build_block_diagonal_sparsity(size_t block_n, size_t n_blocks,
                                          size_t overlap_length)
 /*TODO: this is overly complicated and must be revised*/
@@ -77,9 +67,7 @@ csr_matrix build_block_diagonal_sparsity(size_t block_n, size_t n_blocks,
 
         return csr_matrix(total_rows, total_rows, row_pointers, col_indexes,
                           data);
-    }
-
-    else {
+    } else {
         size_t total_rows =
             block_n + (n_blocks - 1) * (block_n - overlap_length);
 
