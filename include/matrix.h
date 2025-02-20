@@ -121,4 +121,34 @@ class csr_matrix : public sparse_matrix_interface
     const double &operator[](size_t idx) const override;
     bool is_populated() const;
 };
+
+class csr_matrix_sym : public sparse_matrix_interface
+{
+  private:
+    std::unique_ptr<size_t[]> __row_pointers;
+    std::unique_ptr<size_t[]> __col_indexes;
+    bool __populated[4];
+
+  public:
+    csr_matrix_sym(std::size_t n, size_t n_non_zero) noexcept;
+
+    csr_matrix_sym(size_t n, std::vector<size_t> r_pointers,
+                   std::vector<size_t> c_indexes,
+                   std::vector<double> data) noexcept;
+
+    void set_column_indexes(const std::vector<size_t> &col_indexes);
+    size_t *get_column_indexes();
+    const size_t *get_column_indexes() const;
+    void set_row_pointers(const std::vector<size_t> &row_pointers);
+    size_t *get_row_pointers();
+    const size_t *get_row_pointers() const;
+
+    void set_data(const std::vector<double> &data) override;
+    double *get_data() override;
+    const double *get_data() const override;
+
+    const double &operator()(size_t row_idx, size_t col_idx) const override;
+    const double &operator[](size_t idx) const override;
+    bool is_populated() const;
+};
 #endif

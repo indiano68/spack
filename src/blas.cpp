@@ -25,3 +25,4 @@ void gemv(const csr_matrix &A, const std::vector<double> &x,
         }
     }
 }
+

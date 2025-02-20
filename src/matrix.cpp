@@ -219,7 +219,7 @@ csr_matrix::csr_matrix(size_t n_rows, size_t n_cols,
     : sparse_matrix_interface(n_rows, n_cols, data.size())
 {
     if (r_pointers.size() == n_rows && c_indexes.size() == data.size()) {
-        __row_pointers = std::make_unique<size_t[]>(n_rows+1);
+        __row_pointers = std::make_unique<size_t[]>(n_rows + 1);
         __col_indexes = std::make_unique<size_t[]>(c_indexes.size());
         __row_pointers[n_rows] = data.size();
         set_row_pointers(r_pointers);
@@ -268,7 +268,7 @@ size_t *csr_matrix::get_row_pointers()
 {
     return __row_pointers.get();
 }
-const size_t *csr_matrix::get_row_pointers() const 
+const size_t *csr_matrix::get_row_pointers() const
 {
     return __row_pointers.get();
 }
@@ -306,6 +306,135 @@ const double &csr_matrix::operator[](size_t idx) const
 {
     if (idx >= __n_non_zero)
         error_handler("Out of bound access in csr_matrix::operator[]");
+    if (!__populated[2])
+        warn_handler("Accessing Uninitialized Data");
+    return __data[idx];
+}
+
+/******************** Implement CRS_SYM ********************/
+
+csr_matrix_sym::csr_matrix_sym(std::size_t n, size_t n_non_zero) noexcept
+    : sparse_matrix_interface(n, n, n_non_zero),
+      __row_pointers(std::make_unique<size_t[]>(n + 1)),
+      __col_indexes(std::make_unique<size_t[]>(n_non_zero))
+{
+    if (n_non_zero > (n * (n + 1)) / 2)
+        error_handler(
+            "Number of non-zero elements Total allowed number of elements");
+    __row_pointers[n] = n_non_zero;
+}
+
+csr_matrix_sym::csr_matrix_sym(size_t n, std::vector<size_t> r_pointers,
+                               std::vector<size_t> c_indexes,
+                               std::vector<double> data) noexcept
+    : sparse_matrix_interface(n, n, data.size())
+{
+    if (r_pointers.size() == n && c_indexes.size() == data.size()) {
+        __row_pointers = std::make_unique<size_t[]>(n + 1);
+        __col_indexes = std::make_unique<size_t[]>(c_indexes.size());
+        __row_pointers[n] = data.size();
+        set_row_pointers(r_pointers);
+        set_column_indexes(c_indexes);
+        set_data(data);
+    } else
+        error_handler(
+            "Incorrectly sized objects passed to csr_matrix_sym_constructor");
+}
+
+void csr_matrix_sym::set_row_pointers(const std::vector<size_t> &row_pointers)
+{
+    if (row_pointers.size() != __nrows)
+        error_handler("Incorrect number of row pointers");
+    __populated[0] = true;
+    __populated[3] = __populated[0] && __populated[1] && __populated[2];
+    std::memcpy(__row_pointers.get(), row_pointers.data(),
+                sizeof(size_t) * row_pointers.size());
+}
+
+void csr_matrix_sym::set_column_indexes(const std::vector<size_t> &col_indexes)
+{
+    if (col_indexes.size() != __n_non_zero)
+        error_handler("Incorrect number of column indexes");
+    if (!__populated[0])
+        error_handler(
+            "Can not set column indexes before pointers for csr_matrix_sym");
+    __populated[1] = true;
+    __populated[3] = __populated[0] && __populated[1] && __populated[2];
+
+    for (size_t i = 0; i < __nrows; i++)
+        if (col_indexes[__row_pointers[i]] > i)
+            error_handler(
+                "Column index under diagonal not possible for csr_matrix_sym");
+
+    std::memcpy(__col_indexes.get(), col_indexes.data(),
+                sizeof(size_t) * col_indexes.size());
+}
+
+void csr_matrix_sym::set_data(const std::vector<double> &data)
+{
+    if (data.size() != __n_non_zero)
+        error_handler("Incorrect number of row pointers");
+    __populated[2] = true;
+    __populated[3] = __populated[0] && __populated[1] && __populated[2];
+
+    std::memcpy(__data.get(), data.data(), sizeof(double) * data.size());
+}
+
+
+size_t *csr_matrix_sym::get_column_indexes()
+{
+    return __col_indexes.get();
+}
+const size_t *csr_matrix_sym::get_column_indexes() const
+{
+    return __col_indexes.get();
+}
+size_t *csr_matrix_sym::get_row_pointers()
+{
+    return __row_pointers.get();
+}
+const size_t *csr_matrix_sym::get_row_pointers() const
+{
+    return __row_pointers.get();
+}
+double *csr_matrix_sym::get_data()
+{
+    return __data.get();
+}
+const double *csr_matrix_sym::get_data() const
+{
+    return __data.get();
+}
+bool csr_matrix_sym::is_populated() const
+{
+    return __populated[3];
+}
+
+const double &csr_matrix_sym::operator()(size_t row_idx, size_t col_idx) const
+{
+    static const double zero_dummy = 0;
+    const double *data_ptr = &zero_dummy;
+    if (row_idx >= __nrows)
+        error_handler("Row index  out of bound");
+    if (col_idx >= __ncols)
+        error_handler("Col index  out of bound");
+    if (!__populated[2])
+        warn_handler("Accessing Uninitialized Data");
+    if(col_idx < row_idx)
+        std::swap(row_idx, col_idx);
+    for (size_t data_idx = __row_pointers[row_idx];
+         data_idx < __row_pointers[row_idx + 1]; data_idx++)
+        if (__col_indexes[data_idx] == col_idx) {
+            data_ptr = &__data[data_idx];
+            break;
+        }
+    return *data_ptr;
+}
+
+const double &csr_matrix_sym::operator[](size_t idx) const
+{
+    if (idx >= __n_non_zero)
+        error_handler("Out of bound access in csr_matrix_sym::operator[]");
     if (!__populated[2])
         warn_handler("Accessing Uninitialized Data");
     return __data[idx];

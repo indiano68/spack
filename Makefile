@@ -1,6 +1,6 @@
 # Compiler settings
 CXX        := clang++
-CXXFLAGS   := -Wall -Wextra -std=c++17 -Iinclude
+CXXFLAGS   := -Wall -Wextra -std=c++17 -Iinclude -Itest/include
 
 # Archiver settings for static library
 AR         := llvm-ar
