@@ -420,7 +420,7 @@ const double &csr_matrix_sym::operator()(size_t row_idx, size_t col_idx) const
         error_handler("Col index  out of bound");
     if (!__populated[2])
         warn_handler("Accessing Uninitialized Data");
-    if(col_idx < row_idx)
+    if(col_idx < row_idx) 
         std::swap(row_idx, col_idx);
     for (size_t data_idx = __row_pointers[row_idx];
          data_idx < __row_pointers[row_idx + 1]; data_idx++)

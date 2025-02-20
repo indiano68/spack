@@ -4,6 +4,7 @@
 #include <fstream>
 #include <matrix.h>
 #include <limits>
+#include <sstream>
 
 void vector_to_file (const std::vector<double> &x, std::string filename)
 {
@@ -52,5 +53,43 @@ std::vector<double> create_seq_vector(size_t n)
         vec[i] = (double)i;
     }
     return vec;
+}
+
+csr_matrix_sym load_csr_matrix_sym(const std::string &filename)
+{
+    std::ifstream file(filename);
+    std::vector<std::vector<double>> dense;
+    std::string line;
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::vector<double> row;
+        double val;
+        while (ss >> val) {
+            row.push_back(val);
+        }
+        dense.push_back(row);
+    }
+
+    size_t n = dense.size();
+    std::vector<size_t> row_ptr(n, 0);
+    std::vector<size_t> col_idx;
+    std::vector<double> vals;
+
+    for (size_t i = 0; i < n; i++) {
+        size_t added=1;
+        col_idx.push_back(i);
+        vals.push_back(dense[i][i]);
+        for (size_t j = i+1; j < n; j++) {
+            double v = dense[i][j];
+            if (v != 0.0) {
+                col_idx.push_back(j);
+                vals.push_back(v);
+                added++;
+            }
+        }
+        if(i!=n-1)
+            row_ptr[i + 1] = row_ptr[i] + added;
+    }
+    return csr_matrix_sym(n, row_ptr, col_idx, vals);;
 }
 #endif

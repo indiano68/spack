@@ -35,8 +35,11 @@ void forward_sobsitute(const csr_matrix &L_lower, const std::vector<double> &b,
             x[i] -= data[j_cursor] * x[column_indexes[j_cursor]];
         }
         x[i] /= L_lower(i,i);
-        
     }
 }
 
-
+void __symbolic_phase();
+csr_matrix cholesky_decompose(const csr_matrix_sym &A)
+{
+    
+}
