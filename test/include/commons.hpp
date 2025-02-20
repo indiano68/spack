@@ -31,11 +31,16 @@ void matrix_to_file(const csr_matrix &A, std::string filename)
     file_A.close();
 }
 
+#include <random>
+
 std::vector<double> create_random_vector(size_t n)
 {
     std::vector<double> vec(n);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
     for (size_t i = 0; i < n; i++) {
-        vec[i] = (double)rand() / RAND_MAX;
+        vec[i] = dis(gen);
     }
     return vec;
 }
