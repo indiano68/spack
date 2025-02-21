@@ -12,7 +12,6 @@ int main(int argc, char **argv)
     std::vector<double> x(lower_triangular.ncols(),0);
     lower_triangular.set_data(create_random_vector(lower_triangular.r_size()));
     backward_sobstitute_transpose(lower_triangular, b, x);
-    std::cout << "exit_success" << std::endl;
     matrix_to_file(lower_triangular, prefix + "test_upper_triangular.txt");
     vector_to_file(b, prefix + "test_b.txt");
     vector_to_file(x, prefix + "test_x.txt");

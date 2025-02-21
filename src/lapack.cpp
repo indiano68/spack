@@ -47,7 +47,6 @@ void backward_sobstitute_transpose(const csr_matrix &L_lower,
 
     for (size_t i = L_lower.nrows(); i-- > 0;) {
         x[i] = b[i];
-        std::cout << "i: " << i << std::endl;
         for (size_t lower_row = i+1 ;lower_row < L_lower.nrows();lower_row++)
         {   
             for (size_t j_cursor = row_pointers[lower_row];
