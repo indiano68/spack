@@ -119,19 +119,50 @@ void cholesky_decompose(const csr_matrix_sym &A, csr_matrix &L)
     double *L_data = L.get_data();
     const size_t *L_row_pointers = L.get_row_pointers();
     const size_t *L_column_indexes = L.get_column_indexes();
-    double * A_data = A.get_data();
+    const double * A_data = A.get_data();
+    const size_t * A_row_pointers = A.get_row_pointers();
+    const size_t * A_column_indexes = A.get_column_indexes();
     for (size_t i = 0; i < L.nrows(); i++) {
         for (size_t j_cursor = L_row_pointers[i];
              j_cursor < L_row_pointers[i + 1]; ++j_cursor) {
             size_t j = L_column_indexes[j_cursor];
             double sum = 0;
-            for (size_t k = 0; k < j; k++) // this can be improved
-                sum += L(i, k) * L(j, k);
+            size_t k_p_cursor = L_row_pointers[j];
+            size_t j_a_cursor = A_row_pointers[i];
+            for (size_t k_cursor = L_row_pointers[i]; k_cursor < j_cursor; k_cursor++)
+            {
+                for (; k_p_cursor < L_row_pointers[j+1]-1; k_p_cursor++)
+                {
+                   if (L_column_indexes[k_p_cursor] == L_column_indexes[k_cursor]) {
+                        sum += L_data[k_cursor] * L_data[k_p_cursor]; 
+                        break;
+                   }
+                   else if (L_column_indexes[k_p_cursor] > L_column_indexes[k_cursor])
+                       break;
+                }
+                //    sum += L_data[k_cursor] * L(j, L_column_indexes[k_cursor]); 
+            }
             if (i == j)
-                L_data[j_cursor] = sqrt(A(i, i) - sum);
+                L_data[j_cursor] = sqrt(A_data[A_row_pointers[i+1]-1] - sum);
             else
+            for (; j_a_cursor < A_row_pointers[i+1]; j_a_cursor++)
+            {
+               if (L_column_indexes[j_cursor] == A_column_indexes[j_a_cursor]) {
+                    L_data[j_cursor] =
+                        ((1.0 / L[L_row_pointers[j+1]-1]) * (A_data[j_a_cursor] - sum)); 
+                    break;
+               }
+               
+               if (L_column_indexes[j_cursor] < A_column_indexes[j_a_cursor])
+               {
                 L_data[j_cursor] =
-                    ((1.0 / L(j, j)) * (A(i, j) - sum)); // this can be improved
+                    ((1.0 / L[L_row_pointers[j+1]-1]) * (-1*sum)); 
+                   break;
+               }
+                
+            }
+                // L_data[j_cursor] =
+                //     ((1.0 / L[L_row_pointers[j+1]-1]) * (A(i, j) - sum)); 
         }
     }
 }
