@@ -6,3 +6,6 @@
 build/
 
 
+#large files 
+validate/L.txt
+validate/poisson_large.txt

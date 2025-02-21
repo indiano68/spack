@@ -31,6 +31,21 @@ print("@ Testing back_sobstitution with given sizes: \n" + \
     "    y.shape = \033[94m" + str(y.shape[0]) + "\033[0m\n" + \
     "-> RESULT: " + result_str)
 
+prefix = script_path+'/backransp/test_'
+suffix = '.txt'
+A = np.loadtxt(prefix + 'upper_triangular' + suffix)
+x = np.loadtxt(prefix + 'x' + suffix)   
+y = np.loadtxt(prefix + 'b' + suffix)
+
+result = np.allclose(np.linalg.solve(np.transpose(A),y), x)
+result_str = "\033[92mTrue\033[0m" if result else "\033[91mFalse\033[0m"
+
+print("@ Testing back_sobstitution_transp with given sizes: \n" + \
+    "    A.shape = \033[94m" + str(A.shape) + "\033[0m\n" + \
+    "    x.shape = \033[94m" + str(x.shape[0]) + "\033[0m\n" + \
+    "    y.shape = \033[94m" + str(y.shape[0]) + "\033[0m\n" + \
+    "-> RESULT: " + result_str)
+
 prefix = script_path+'/'
 suffix = '.txt'
 A = np.loadtxt(prefix + 'poisson_large' + suffix)

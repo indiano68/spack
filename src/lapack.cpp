@@ -37,6 +37,31 @@ void forward_sobsitute(const csr_matrix &L_lower, const std::vector<double> &b,
     }
 }
 
+void backward_sobstitute_transpose(const csr_matrix &L_lower,
+                                   const std::vector<double> &b,
+                                   std::vector<double> &x)
+{
+    const size_t *row_pointers = L_lower.get_row_pointers();
+    const size_t *column_indexes = L_lower.get_column_indexes();
+    const double *data = L_lower.get_data();
+
+    for (size_t i = L_lower.nrows(); i-- > 0;) {
+        x[i] = b[i];
+        std::cout << "i: " << i << std::endl;
+        for (size_t lower_row = i+1 ;lower_row < L_lower.nrows();lower_row++)
+        {   
+            for (size_t j_cursor = row_pointers[lower_row];
+                 j_cursor < row_pointers[lower_row + 1] - 1; ++j_cursor) {
+                    if(column_indexes[j_cursor] == i)
+                    {
+                           x[i] -= data[j_cursor] * x[lower_row];
+                    }
+            }
+        }
+        x[i] /= L_lower(i, i);
+    }
+}
+
 std::vector<size_t> build_etree(const csr_matrix_sym &A)
 {
     std::vector<size_t> etree(A.ncols());
@@ -119,9 +144,9 @@ void cholesky_decompose(const csr_matrix_sym &A, csr_matrix &L)
     double *L_data = L.get_data();
     const size_t *L_row_pointers = L.get_row_pointers();
     const size_t *L_column_indexes = L.get_column_indexes();
-    const double * A_data = A.get_data();
-    const size_t * A_row_pointers = A.get_row_pointers();
-    const size_t * A_column_indexes = A.get_column_indexes();
+    const double *A_data = A.get_data();
+    const size_t *A_row_pointers = A.get_row_pointers();
+    const size_t *A_column_indexes = A.get_column_indexes();
     for (size_t i = 0; i < L.nrows(); i++) {
         for (size_t j_cursor = L_row_pointers[i];
              j_cursor < L_row_pointers[i + 1]; ++j_cursor) {
@@ -129,40 +154,38 @@ void cholesky_decompose(const csr_matrix_sym &A, csr_matrix &L)
             double sum = 0;
             size_t k_p_cursor = L_row_pointers[j];
             size_t j_a_cursor = A_row_pointers[i];
-            for (size_t k_cursor = L_row_pointers[i]; k_cursor < j_cursor; k_cursor++)
-            {
-                for (; k_p_cursor < L_row_pointers[j+1]-1; k_p_cursor++)
-                {
-                   if (L_column_indexes[k_p_cursor] == L_column_indexes[k_cursor]) {
-                        sum += L_data[k_cursor] * L_data[k_p_cursor]; 
+            for (size_t k_cursor = L_row_pointers[i]; k_cursor < j_cursor;
+                 k_cursor++) {
+                for (; k_p_cursor < L_row_pointers[j + 1] - 1; k_p_cursor++) {
+                    if (L_column_indexes[k_p_cursor] ==
+                        L_column_indexes[k_cursor]) {
+                        sum += L_data[k_cursor] * L_data[k_p_cursor];
                         break;
-                   }
-                   else if (L_column_indexes[k_p_cursor] > L_column_indexes[k_cursor])
-                       break;
+                    } else if (L_column_indexes[k_p_cursor] >
+                               L_column_indexes[k_cursor])
+                        break;
                 }
-                //    sum += L_data[k_cursor] * L(j, L_column_indexes[k_cursor]); 
             }
             if (i == j)
-                L_data[j_cursor] = sqrt(A_data[A_row_pointers[i+1]-1] - sum);
-            else
-            for (; j_a_cursor < A_row_pointers[i+1]; j_a_cursor++)
-            {
-               if (L_column_indexes[j_cursor] == A_column_indexes[j_a_cursor]) {
-                    L_data[j_cursor] =
-                        ((1.0 / L[L_row_pointers[j+1]-1]) * (A_data[j_a_cursor] - sum)); 
-                    break;
-               }
-               
-               if (L_column_indexes[j_cursor] < A_column_indexes[j_a_cursor])
-               {
                 L_data[j_cursor] =
-                    ((1.0 / L[L_row_pointers[j+1]-1]) * (-1*sum)); 
-                   break;
-               }
-                
-            }
-                // L_data[j_cursor] =
-                //     ((1.0 / L[L_row_pointers[j+1]-1]) * (A(i, j) - sum)); 
+                    sqrt(A_data[A_row_pointers[i + 1] - 1] - sum);
+            else
+                for (; j_a_cursor < A_row_pointers[i + 1]; j_a_cursor++) {
+                    if (L_column_indexes[j_cursor] ==
+                        A_column_indexes[j_a_cursor]) {
+                        L_data[j_cursor] =
+                            ((1.0 / L[L_row_pointers[j + 1] - 1]) *
+                             (A_data[j_a_cursor] - sum));
+                        break;
+                    }
+
+                    if (L_column_indexes[j_cursor] <
+                        A_column_indexes[j_a_cursor]) {
+                        L_data[j_cursor] =
+                            ((1.0 / L[L_row_pointers[j + 1] - 1]) * (-1 * sum));
+                        break;
+                    }
+                }
         }
     }
 }
