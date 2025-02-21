@@ -1,3 +1,4 @@
+#include <cmath>
 #include <lapack.h>
 #include <string>
 extern void error_handler(std::string message);
@@ -88,7 +89,7 @@ std::vector<size_t> build_etree_pc(const csr_matrix_sym &A)
 std::tuple<std::vector<size_t>, std::vector<size_t>>
 build_L_layout(const csr_matrix_sym &A, const std::vector<size_t> &etree)
 {
-    std::vector<size_t> L_row_pointers(A.nrows()+1);
+    std::vector<size_t> L_row_pointers(A.nrows() + 1);
     std::vector<size_t> L_column_indexes;
     const size_t *row_pointers = A.get_row_pointers();
     const size_t *column_indexes = A.get_column_indexes();
@@ -97,19 +98,40 @@ build_L_layout(const csr_matrix_sym &A, const std::vector<size_t> &etree)
         size_t added = 1;
         mark[i] = i;
         for (size_t j_cursor = row_pointers[i];
-            j_cursor < row_pointers[i + 1] - 1; ++j_cursor) {
-                size_t j = column_indexes[j_cursor];
-                while (mark[j] != i) {
-                    L_column_indexes.push_back(j);
-                    mark[j] = i;
-                    j = etree[j];
-                    ++added;
-                }
+             j_cursor < row_pointers[i + 1] - 1; ++j_cursor) {
+            size_t j = column_indexes[j_cursor];
+            while (mark[j] != i) {
+                L_column_indexes.push_back(j);
+                mark[j] = i;
+                j = etree[j];
+                ++added;
             }
-            L_column_indexes.push_back(i);
-            L_row_pointers[i+1] = L_row_pointers[i]+added;
+        }
+        L_column_indexes.push_back(i);
+        L_row_pointers[i + 1] = L_row_pointers[i] + added;
     }
     L_row_pointers.pop_back();
     return std::make_tuple(L_row_pointers, L_column_indexes);
 }
 
+void cholesky_decompose(const csr_matrix_sym &A, csr_matrix &L)
+{
+    double *L_data = L.get_data();
+    const size_t *L_row_pointers = L.get_row_pointers();
+    const size_t *L_column_indexes = L.get_column_indexes();
+    double * A_data = A.get_data();
+    for (size_t i = 0; i < L.nrows(); i++) {
+        for (size_t j_cursor = L_row_pointers[i];
+             j_cursor < L_row_pointers[i + 1]; ++j_cursor) {
+            size_t j = L_column_indexes[j_cursor];
+            double sum = 0;
+            for (size_t k = 0; k < j; k++) // this can be improved
+                sum += L(i, k) * L(j, k);
+            if (i == j)
+                L_data[j_cursor] = sqrt(A(i, i) - sum);
+            else
+                L_data[j_cursor] =
+                    ((1.0 / L(j, j)) * (A(i, j) - sum)); // this can be improved
+        }
+    }
+}

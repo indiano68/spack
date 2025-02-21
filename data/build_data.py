@@ -29,8 +29,11 @@ def build_five_point_stencil(n):
     return A
 
 np.set_printoptions(threshold=np.inf, linewidth=200)
-matrix = build_five_point_stencil(10)
+matrix = build_five_point_stencil(4)
 print(matrix)
+np.set_printoptions(threshold=np.inf,precision =2, linewidth=200)
+chle = np.linalg.cholesky(matrix)
+print(chle)
 
 # Write the matrix to a file
 with open('matrix_output.txt', 'w') as f:
