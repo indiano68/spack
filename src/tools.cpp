@@ -122,9 +122,9 @@ csr_matrix build_block_diagonal_sparsity(size_t block_n, size_t n_blocks,
                           data);
     }
 }
-
-csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks,
-                                             size_t overlap_length)
+csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n,
+                                                       size_t n_blocks,
+                                                       size_t overlap_length)
 {
     // Overlap must be strictly smaller than the block size.
     if (overlap_length >= block_n) {
@@ -135,12 +135,12 @@ csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks
     if (overlap_length == 0) {
         // Global matrix is simply n_blocks independent dense blocks.
         size_t total_rows = block_n * n_blocks;
-        // For each block, row r in that block (with local index r_local) stores
-        // only the upper-triangular part, i.e. block_n - r_local entries.
+        // For each block, row r in that block (with local index r_local)
+        // stores only the lower-triangular part, i.e. (r_local + 1) entries.
         size_t total_nnz = 0;
         for (size_t r = 0; r < total_rows; r++) {
             size_t local = r % block_n;
-            total_nnz += block_n - local;
+            total_nnz += local + 1;
         }
 
         std::vector<size_t> row_pointers(total_rows, 0);
@@ -150,18 +150,18 @@ csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks
         size_t nnz_counter = 0;
         for (size_t r = 0; r < total_rows; r++) {
             row_pointers[r] = nnz_counter;
+            std::cout << row_pointers[r] << std::endl;
             size_t block = r / block_n;
             size_t local = r % block_n;
             size_t block_start = block * block_n;
-            // In the dense block, store only j>=local.
-            for (size_t j = local; j < block_n; j++) {
-                col_indexes[nnz_counter + (j - local)] = block_start + j;
+            // In the dense block, store only j <= local.
+            for (size_t j = 0; j <= local; j++) {
+                col_indexes[nnz_counter + j] = block_start + j;
             }
-            nnz_counter += block_n - local;
+            nnz_counter += local + 1;
         }
-
-        return csr_matrix_sym(total_rows, row_pointers, col_indexes,
-                          data);
+        
+        return csr_matrix_sym(total_rows, row_pointers, col_indexes, data);
     }
     // --- Case 2: Nonzero overlap ---
     else {
@@ -176,15 +176,14 @@ csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks
             block_n - overlap_length; // vertical shift per block
 
         // First pass: determine, for each row, how many columns will be stored.
-        // In the fully stored matrix, the union of nonzeros for row r is
-        // computed by:
+        // In the full (dense) union of nonzeros for row r:
         //   b_min = smallest block index that covers row r
         //   b_max = largest block index that covers row r (capped at
         //   n_blocks-1)
-        // and the full union covers columns
-        //   [union_start, union_end) where union_start = b_min * block_step,
-        //   and union_end = b_max * block_step + block_n.
-        // For symmetric storage we keep only columns j >= r.
+        // and the union covers columns [union_start, union_end),
+        // where union_start = b_min * block_step, and union_end = b_max *
+        // block_step + block_n. For lower triangular storage we keep only
+        // columns with index <= r.
         for (size_t r = 0; r < total_rows; r++) {
             size_t b_min = 0;
             if (r >= block_n) {
@@ -201,10 +200,13 @@ csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks
             size_t union_end =
                 b_max * block_step + block_n; // one past the last col index
 
-            // Only store entries with col index >= r.
-            size_t effective_start = (r > union_start ? r : union_start);
+            // Only store entries with col index <= r.
+            // Thus, we want to keep indices in [union_start, min(r,
+            // union_end-1)].
+            size_t effective_end = (r < union_end ? r : union_end - 1);
             size_t sym_length =
-                (union_end > effective_start ? union_end - effective_start : 0);
+                (effective_end >= union_start ? effective_end - union_start + 1
+                                              : 0);
 
             row_pointers[r] = total_nnz;
             total_nnz += sym_length;
@@ -229,17 +231,19 @@ csr_matrix_sym build_block_diagonal_sparsity_sym(size_t block_n, size_t n_blocks
 
             size_t union_start = b_min * block_step;
             size_t union_end = b_max * block_step + block_n;
-            size_t effective_start = (r > union_start ? r : union_start);
+            size_t effective_end = (r < union_end ? r : union_end - 1);
             size_t sym_length =
-                (union_end > effective_start ? union_end - effective_start : 0);
+                (effective_end >= union_start ? effective_end - union_start + 1
+                                              : 0);
 
+            // Fill in the indices from union_start up to effective_end.
             for (size_t j = 0; j < sym_length; j++) {
-                col_indexes[nnz_counter + j] = effective_start + j;
+                col_indexes[nnz_counter + j] = union_start + j;
             }
             nnz_counter += sym_length;
         }
 
-        return csr_matrix_sym(total_rows, row_pointers, col_indexes,
-                          data);
+        return csr_matrix_sym(total_rows, row_pointers, col_indexes, data);
     }
 }
+

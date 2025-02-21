@@ -77,9 +77,7 @@ csr_matrix_sym load_csr_matrix_sym(const std::string &filename)
 
     for (size_t i = 0; i < n; i++) {
         size_t added=1;
-        col_idx.push_back(i);
-        vals.push_back(dense[i][i]);
-        for (size_t j = i+1; j < n; j++) {
+        for (size_t j = 0; j < i; j++) {
             double v = dense[i][j];
             if (v != 0.0) {
                 col_idx.push_back(j);
@@ -87,6 +85,8 @@ csr_matrix_sym load_csr_matrix_sym(const std::string &filename)
                 added++;
             }
         }
+        col_idx.push_back(i);
+        vals.push_back(dense[i][i]);
         if(i!=n-1)
             row_ptr[i + 1] = row_ptr[i] + added;
     }

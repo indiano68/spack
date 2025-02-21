@@ -360,11 +360,10 @@ void csr_matrix_sym::set_column_indexes(const std::vector<size_t> &col_indexes)
             "Can not set column indexes before pointers for csr_matrix_sym");
     __populated[1] = true;
     __populated[3] = __populated[0] && __populated[1] && __populated[2];
-
     for (size_t i = 0; i < __nrows; i++)
         if (col_indexes[__row_pointers[i]] > i)
             error_handler(
-                "Column index under diagonal not possible for csr_matrix_sym");
+                "Column index over diagonal not possible for csr_matrix_sym");
 
     std::memcpy(__col_indexes.get(), col_indexes.data(),
                 sizeof(size_t) * col_indexes.size());
@@ -420,7 +419,7 @@ const double &csr_matrix_sym::operator()(size_t row_idx, size_t col_idx) const
         error_handler("Col index  out of bound");
     if (!__populated[2])
         warn_handler("Accessing Uninitialized Data");
-    if(col_idx < row_idx) 
+    if(col_idx > row_idx) 
         std::swap(row_idx, col_idx);
     for (size_t data_idx = __row_pointers[row_idx];
          data_idx < __row_pointers[row_idx + 1]; data_idx++)
